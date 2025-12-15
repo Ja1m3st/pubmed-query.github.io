@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<title>Generador de Búsquedas PubMed</title>
+		<style>
+				* {
+						margin: 0;
+						padding: 0;
+						box-sizing: border-box;
+				}
+
+				body {
+						font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+						background: linear-gradient(135deg, #e3f2fd 0%, #c5cae9 100%);
+						min-height: 100vh;
+						padding: 20px;
+				}
+
+				.container {
+						max-width: 1200px;
+						margin: 0 auto;
+				}
+
+				.card {
+						background: white;
+						border-radius: 12px;
+						box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+						padding: 30px;
+						margin-bottom: 20px;
+				}
+
+				.header {
+						display: flex;
+						align-items: center;
+						gap: 15px;
+						margin-bottom: 20px;
+				}
+
+				.header svg {
+						width: 40px;
+						height: 40px;
+						color: #2196F3;
+				}
+
+				h1 {
+						color: #333;
+						font-size: 32px;
+				}
+
+				h2 {
+						color: #555;
+						font-size: 22px;
+						margin-bottom: 15px;
+						margin-top: 10px;
+				}
+
+				.description {
+						color: #666;
+						margin-bottom: 25px;
+						line-height: 1.6;
+				}
+
+				.term-group {
+						margin-bottom: 15px;
+				}
+
+				.operator-select {
+						margin-bottom: 10px;
+						padding: 8px 12px;
+						border: 1px solid #ddd;
+						border-radius: 6px;
+						font-size: 14px;
+				}
+
+				.term-row {
+						display: flex;
+						gap: 10px;
+						align-items: center;
+				}
+
+				input[type="text"],
+				input[type="date"],
+				select {
+						padding: 12px;
+						border: 1px solid #ddd;
+						border-radius: 6px;
+						font-size: 14px;
+						transition: all 0.3s;
+				}
+
+				input[type="text"]:focus,
+				input[type="date"]:focus,
+				select:focus {
+						outline: none;
+						border-color: #2196F3;
+						box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
+				}
+
+				.term-input {
+						flex: 1;
+				}
+
+				.field-select {
+						min-width: 150px;
+				}
+
+				.btn {
+						padding: 10px 20px;
+						border: none;
+						border-radius: 6px;
+						font-size: 14px;
+						cursor: pointer;
+						transition: all 0.3s;
+						display: inline-flex;
+						align-items: center;
+						gap: 8px;
+				}
+
+				.btn-primary {
+						background: #2196F3;
+						color: white;
+				}
+
+				.btn-primary:hover {
+						background: #1976D2;
+				}
+
+				.btn-success {
+						background: #4CAF50;
+						color: white;
+				}
+
+				.btn-success:hover {
+						background: #45a049;
+				}
+
+				.btn-danger {
+						background: #f44336;
+						color: white;
+						padding: 10px;
+				}
+
+				.btn-danger:hover {
+						background: #da190b;
+				}
+
+				.date-grid {
+						display: grid;
+						grid-template-columns: 1fr 1fr;
+						gap: 20px;
+						margin-top: 10px;
+				}
+
+				.form-group {
+						margin-bottom: 10px;
+				}
+
+				label {
+						display: block;
+						font-size: 14px;
+						font-weight: 500;
+						color: #555;
+						margin-bottom: 5px;
+				}
+
+				.checkbox-grid {
+						display: grid;
+						grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+						gap: 10px;
+						margin-top: 10px;
+				}
+
+				.checkbox-label {
+						display: flex;
+						align-items: center;
+						gap: 8px;
+						cursor: pointer;
+				}
+
+				.checkbox-label input[type="checkbox"] {
+						width: 18px;
+						height: 18px;
+						cursor: pointer;
+				}
+
+				.result-box {
+						background: #f5f5f5;
+						border: 2px solid #2196F3;
+						border-radius: 8px;
+						padding: 20px;
+						margin-top: 20px;
+				}
+
+				.result-header {
+						display: flex;
+						justify-content: space-between;
+						align-items: center;
+						margin-bottom: 15px;
+				}
+
+				.query-output {
+						background: white;
+						padding: 15px;
+						border: 1px solid #ddd;
+						border-radius: 6px;
+						font-family: 'Courier New', monospace;
+						font-size: 13px;
+						word-break: break-all;
+						line-height: 1.6;
+				}
+
+				.info-box {
+						background: #e3f2fd;
+						border-radius: 8px;
+						padding: 20px;
+						margin-top: 20px;
+				}
+
+				.info-box h3 {
+						color: #1976D2;
+						margin-bottom: 10px;
+				}
+
+				.info-box ol {
+						margin-left: 20px;
+						line-height: 1.8;
+				}
+
+				.info-box a {
+						color: #2196F3;
+						text-decoration: none;
+				}
+
+				.info-box a:hover {
+						text-decoration: underline;
+				}
+
+				.guide-section {
+						margin-top: 20px;
+				}
+
+				.guide-item {
+						margin-bottom: 20px;
+						padding-bottom: 15px;
+						border-bottom: 1px solid #eee;
+				}
+
+				.guide-item:last-child {
+						border-bottom: none;
+				}
+
+				.guide-item h4 {
+						color: #2196F3;
+						margin-bottom: 8px;
+						font-size: 16px;
+				}
+
+				.guide-item p {
+						color: #666;
+						line-height: 1.6;
+						margin: 5px 0;
+				}
+
+				.guide-item .example {
+						background: #f5f5f5;
+						padding: 10px;
+						border-radius: 6px;
+						margin-top: 8px;
+						font-size: 14px;
+				}
+
+				.guide-item .example code {
+						background: white;
+						padding: 2px 6px;
+						border-radius: 3px;
+						font-family: 'Courier New', monospace;
+						color: #d32f2f;
+				}
+
+				.guide-item .tip {
+						background: #e8f5e9;
+						padding: 10px;
+						border-radius: 6px;
+						margin-top: 8px;
+						border-left: 3px solid #4CAF50;
+				}
+
+				.complete-example {
+						margin: 15px 0;
+						padding: 12px;
+						background: white;
+						border-radius: 6px;
+				}
+
+				.complete-example code {
+						display: block;
+						background: #f5f5f5;
+						padding: 10px;
+						border-radius: 4px;
+						font-family: 'Courier New', monospace;
+						font-size: 13px;
+						margin-top: 8px;
+						word-wrap: break-word;
+				}
+
+				@media (max-width: 768px) {
+						.date-grid {
+								grid-template-columns: 1fr;
+						}
+						
+						.term-row {
+								flex-direction: column;
+						}
+
+						.field-select {
+								width: 100%;
+						}
+				}
+		</style>
+</head>
+<body>
+		<div class="container">
+				<div class="card">
+						<div class="header">
+								<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+								</svg>
+								<h1>Generador de Búsquedas PubMed</h1>
+						</div>
+						
+						<p class="description">
+								Crea búsquedas avanzadas para PubMed sin necesidad de conocer la sintaxis. 
+								Simplemente configura tus filtros y copia el comando generado.
+						</p>
+
+						<!-- Términos de búsqueda -->
+						<h2>Términos de Búsqueda</h2>
+						<div id="termsContainer"></div>
+						<button class="btn btn-primary" onclick="addTerm()">
+								<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+										<line x1="12" y1="5" x2="12" y2="19"></line>
+										<line x1="5" y1="12" x2="19" y2="12"></line>
+								</svg>
+								Añadir Término
+						</button>
+
+						<!-- Filtros de fecha -->
+						<h2>Rango de Fechas</h2>
+						<div class="date-grid">
+								<div class="form-group">
+										<label>Desde</label>
+										<input type="date" id="dateFrom" style="width: 100%;">
+								</div>
+								<div class="form-group">
+										<label>Hasta</label>
+										<input type="date" id="dateTo" style="width: 100%;">
+								</div>
+						</div>
+
+						<!-- Tipos de artículo -->
+						<h2>Tipos de Artículo</h2>
+						<div class="checkbox-grid" id="articleTypes"></div>
+
+						<!-- Especie e Idioma -->
+						<div class="date-grid" style="margin-top: 20px;">
+								<div class="form-group">
+										<label>Especie (MeSH)</label>
+										<input type="text" id="species" placeholder="ej: Humans, Mice, Rats..." style="width: 100%;">
+								</div>
+								<div class="form-group">
+										<label>Idioma</label>
+										<select id="language" style="width: 100%;">
+												<option value="">Cualquier idioma</option>
+										</select>
+								</div>
+						</div>
+
+						<!-- Filtros de Acceso -->
+						<h2>Acceso a Artículos</h2>
+						<div class="checkbox-grid">
+								<label class="checkbox-label">
+										<input type="checkbox" id="freeFullText" onchange="updateQuery()">
+										<span>Solo artículos gratuitos (Free full text)</span>
+								</label>
+								<label class="checkbox-label">
+										<input type="checkbox" id="openAccess" onchange="updateQuery()">
+										<span>Solo Open Access</span>
+								</label>
+								<label class="checkbox-label">
+										<input type="checkbox" id="abstract" onchange="updateQuery()">
+										<span>Solo con abstract disponible</span>
+								</label>
+						</div>
+						<p style="color: #666; font-size: 13px; margin-top: 8px; font-style: italic;">
+								💡 Tip: Marca "Solo artículos gratuitos" para evitar perder tiempo con artículos de pago
+						</p>
+
+						<!-- Comando generado -->
+						<div class="result-box">
+								<div class="result-header">
+										<h2 style="margin: 0;">Comando Generado</h2>
+										<button class="btn btn-success" id="copyBtn" onclick="copyQuery()">
+												<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+														<rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+														<path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+												</svg>
+												<span id="copyText">Copiar</span>
+										</button>
+								</div>
+								<div class="query-output" id="queryOutput">(No hay filtros aplicados)</div>
+								<p style="color: #666; font-size: 14px; margin-top: 10px;">
+										Copia este comando y pégalo en el buscador avanzado de PubMed
+								</p>
+						</div>
+				</div>
+
+				<div class="info-box">
+						<h3>💡 Cómo usar:</h3>
+						<ol>
+								<li>Configura tus filtros y términos de búsqueda</li>
+								<li>Haz clic en "Copiar" para copiar el comando generado</li>
+								<li>Ve a <a href="https://pubmed.ncbi.nlm.nih.gov/advanced/" target="_blank">PubMed Advanced Search</a></li>
+								<li>Pega el comando en el campo de búsqueda y ejecuta la búsqueda</li>
+						</ol>
+				</div>
+
+				<div class="card" style="margin-top: 20px;">
+						<h2 style="color: #2196F3; margin-bottom: 20px;">📚 Guía de Campos y Tipos de Artículo</h2>
+						
+						<div class="guide-section">
+								<h3 style="color: #555; margin-top: 0;">Campos de Búsqueda</h3>
+								
+								<div class="guide-item">
+										<h4>🔹 All Fields (Todos los campos)</h4>
+										<p>Busca en todos los campos del registro: título, abstract, autores, términos MeSH, etc.</p>
+										<p class="example"><strong>Ejemplo:</strong> <code>diabetes</code> - encuentra cualquier artículo que mencione diabetes en cualquier parte</p>
+								</div>
+
+								<div class="guide-item">
+										<h4>🔹 Title (Título)</h4>
+										<p>Busca solo en el título del artículo. Útil para búsquedas muy específicas.</p>
+										<p class="example"><strong>Ejemplo:</strong> <code>covid-19[Title]</code> - encuentra artículos con "covid-19" en el título</p>
+								</div>
+
+								<div class="guide-item">
+										<h4>🔹 Title/Abstract (Título/Resumen)</h4>
+										<p>Busca en el título y el resumen del artículo. El campo más usado para búsquedas específicas.</p>
+										<p class="example"><strong>Ejemplo:</strong> <code>"machine learning"[Title/Abstract]</code> - artículos sobre machine learning en título o resumen</p>
+								</div>
+
+								<div class="guide-item">
+										<h4>🔹 Abstract (Resumen)</h4>
+										<p>Busca solo en el resumen del artículo.</p>
+										<p class="example"><strong>Ejemplo:</strong> <code>hypertension[Abstract]</code> - artículos que mencionan hipertensión en el resumen</p>
+								</div>
+
+								<div class="guide-item">
+										<h4>🔹 MeSH Terms (Términos MeSH)</h4>
+										<p>MeSH (Medical Subject Headings) son términos controlados usados para indexar artículos. Son más precisos que texto libre.</p>
+										<p class="example"><strong>Ejemplo:</strong> <code>"Diabetes Mellitus, Type 2"[MeSH Terms]</code> - usa el término MeSH oficial para diabetes tipo 2</p>
+										<p class="tip">💡 <strong>Tip:</strong> Busca términos MeSH en <a href="https://www.ncbi.nlm.nih.gov/mesh/" target="_blank">MeSH Database</a></p>
+								</div>
+
+								<div class="guide-item">
+										<h4>🔹 Author (Autor)</h4>
+										<p>Busca por nombre del autor.</p>
+										<p class="example"><strong>Ejemplo:</strong> <code>Smith J[Author]</code> - artículos del autor J. Smith</p>
+								</div>
+
+								<div class="guide-item">
+										<h4>🔹 Journal (Revista)</h4>
+										<p>Busca en revistas específicas.</p>
+										<p class="example"><strong>Ejemplo:</strong> <code>Nature[Journal]</code> - artículos publicados en Nature</p>
+								</div>
+
+								<div class="guide-item">
+										<h4>🔹 PMID</h4>
+										<p>Busca por el identificador único de PubMed.</p>
+										<p class="example"><strong>Ejemplo:</strong> <code>12345678[PMID]</code> - encuentra el artículo con ese PMID específico</p>
+								</div>
+						</div>
+
+						<div class="guide-section" style="margin-top: 30px;">
+								<h3 style="color: #555;">Tipos de Artículo</h3>
+								
+								<div class="guide-item">
+										<h4>🔹 Clinical Trial (Ensayo Clínico)</h4>
+										<p>Estudios que evalúan intervenciones médicas en participantes humanos.</p>
+										<p class="example"><strong>Cuándo usar:</strong> Buscas evidencia sobre efectividad de tratamientos</p>
+								</div>
+
+								<div class="guide-item">
+										<h4>🔹 Randomized Controlled Trial (Ensayo Controlado Aleatorizado)</h4>
+										<p>El gold standard de evidencia clínica. Participantes asignados aleatoriamente a grupos.</p>
+										<p class="example"><strong>Cuándo usar:</strong> Necesitas la mejor evidencia sobre eficacia de tratamientos</p>
+								</div>
+
+								<div class="guide-item">
+										<h4>🔹 Meta-Analysis (Meta-análisis)</h4>
+										<p>Análisis estadístico que combina resultados de múltiples estudios.</p>
+										<p class="example"><strong>Cuándo usar:</strong> Quieres un resumen cuantitativo de la evidencia disponible</p>
+								</div>
+
+								<div class="guide-item">
+										<h4>🔹 Systematic Review (Revisión Sistemática)</h4>
+										<p>Revisión exhaustiva y estructurada de la literatura sobre un tema específico.</p>
+										<p class="example"><strong>Cuándo usar:</strong> Necesitas una visión completa del estado del conocimiento</p>
+								</div>
+
+								<div class="guide-item">
+										<h4>🔹 Review (Revisión)</h4>
+										<p>Artículo que resume y analiza la literatura existente sobre un tema.</p>
+										<p class="example"><strong>Cuándo usar:</strong> Quieres una introducción o actualización sobre un tema</p>
+								</div>
+
+								<div class="guide-item">
+										<h4>🔹 Case Reports (Reportes de Caso)</h4>
+										<p>Descripción detallada de casos clínicos individuales.</p>
+										<p class="example"><strong>Cuándo usar:</strong> Buscas casos clínicos raros o presentaciones inusuales</p>
+								</div>
+						</div>
+
+						<div class="guide-section" style="margin-top: 30px;">
+								<h3 style="color: #555;">Filtros de Acceso</h3>
+								
+								<div class="guide-item">
+										<h4>🔹 Free Full Text (Texto Completo Gratuito)</h4>
+										<p>Filtra solo artículos cuyo texto completo está disponible gratuitamente.</p>
+										<p class="example"><strong>Cuándo usar:</strong> Quieres evitar artículos de pago y acceder directamente al contenido completo</p>
+										<p class="tip">💡 <strong>Recomendado:</strong> Activa esta opción para ahorrar tiempo y acceder solo a artículos que puedes leer completamente</p>
+								</div>
+
+								<div class="guide-item">
+										<h4>🔹 Open Access</h4>
+										<p>Artículos publicados bajo licencias de acceso abierto, disponibles permanentemente y sin restricciones.</p>
+										<p class="example"><strong>Cuándo usar:</strong> Necesitas artículos que puedas compartir, descargar y usar sin limitaciones de copyright</p>
+								</div>
+
+								<div class="guide-item">
+										<h4>🔹 Con Abstract Disponible</h4>
+										<p>Filtra artículos que tienen un resumen (abstract) disponible en PubMed.</p>
+										<p class="example"><strong>Cuándo usar:</strong> Quieres evaluar rápidamente la relevancia del artículo antes de buscarlo completo</p>
+								</div>
+						</div>
+
+						<div class="guide-section" style="margin-top: 30px; background: #fff3cd; padding: 15px; border-radius: 8px; border-left: 4px solid #ffc107;">
+								<h3 style="color: #856404; margin-top: 0;">⚡ Ejemplos de Búsquedas Completas</h3>
+								
+								<div class="complete-example">
+										<p><strong>Búsqueda básica:</strong></p>
+										<code>"breast cancer"[Title/Abstract] AND "chemotherapy"[Title/Abstract]</code>
+										<p style="margin-top: 8px; color: #666;">→ Artículos sobre cáncer de mama y quimioterapia</p>
+								</div>
+
+								<div class="complete-example">
+										<p><strong>Búsqueda con filtros de fecha y tipo:</strong></p>
+										<code>diabetes[Title/Abstract] AND ("2020/01/01"[Date - Publication] : "2024/12/31"[Date - Publication]) AND ("Meta-Analysis"[Publication Type] OR "Systematic Review"[Publication Type])</code>
+										<p style="margin-top: 8px; color: #666;">→ Meta-análisis y revisiones sistemáticas sobre diabetes de 2020-2024</p>
+								</div>
+
+								<div class="complete-example">
+										<p><strong>Búsqueda con términos MeSH y especie:</strong></p>
+										<code>"Alzheimer Disease"[MeSH Terms] AND "Humans"[MeSH Terms] AND english[Language]</code>
+										<p style="margin-top: 8px; color: #666;">→ Artículos sobre Alzheimer en humanos, publicados en inglés</p>
+								</div>
+						</div>
+				</div>
+		</div>
+			<div style="text-align: center; padding: 20px; color: #666; font-size: 14px; border-top: 1px solid #eee; margin-top: 30px;">
+				<p>© 2025 Jaime Sánchez Guinea. Este proyecto está licenciado bajo <a href="LICENSE.md" target="_blank">MIT License</a>.</p>
+				<p>Puedes usar y modificar este código, pero por favor incluye atribución al autor original.</p>
+		</div>
+
+		<script>
+				const fields = [
+						'All Fields',
+						'Title',
+						'Title/Abstract',
+						'Abstract',
+						'Author',
+						'Journal',
+						'MeSH Terms',
+						'Affiliation',
+						'PMID'
+				];
+
+				const operators = ['AND', 'OR', 'NOT'];
+
+				const articleTypeOptions = [
+						'Clinical Trial',
+						'Meta-Analysis',
+						'Randomized Controlled Trial',
+						'Review',
+						'Systematic Review',
+						'Case Reports',
+						'Comparative Study',
+						'Letter',
+						'Editorial'
+				];
+
+				const languageOptions = ['English', 'Spanish', 'French', 'German', 'Italian', 'Japanese', 'Chinese'];
+
+				const fieldMapping = {
+						'All Fields': '',
+						'Title': '[Title]',
+						'Title/Abstract': '[Title/Abstract]',
+						'Abstract': '[Abstract]',
+						'Author': '[Author]',
+						'Journal': '[Journal]',
+						'MeSH Terms': '[MeSH Terms]',
+						'Affiliation': '[Affiliation]',
+						'PMID': '[PMID]'
+				};
+
+				let terms = [{ text: '', field: 'All Fields', operator: 'AND' }];
+
+				function init() {
+						renderTerms();
+						renderArticleTypes();
+						renderLanguages();
+						updateQuery();
+				}
+
+				function renderTerms() {
+						const container = document.getElementById('termsContainer');
+						container.innerHTML = '';
+
+						terms.forEach((term, index) => {
+								const termGroup = document.createElement('div');
+								termGroup.className = 'term-group';
+
+								if (index > 0) {
+										const operatorSelect = document.createElement('select');
+										operatorSelect.className = 'operator-select';
+										operators.forEach(op => {
+												const option = document.createElement('option');
+												option.value = op;
+												option.textContent = op;
+												option.selected = term.operator === op;
+												operatorSelect.appendChild(option);
+										});
+										operatorSelect.onchange = (e) => {
+												terms[index].operator = e.target.value;
+												updateQuery();
+										};
+										termGroup.appendChild(operatorSelect);
+								}
+
+								const termRow = document.createElement('div');
+								termRow.className = 'term-row';
+
+								const input = document.createElement('input');
+								input.type = 'text';
+								input.className = 'term-input';
+								input.placeholder = 'Introduce término de búsqueda...';
+								input.value = term.text;
+								input.oninput = (e) => {
+										terms[index].text = e.target.value;
+										updateQuery();
+								};
+
+								const fieldSelect = document.createElement('select');
+								fieldSelect.className = 'field-select';
+								fields.forEach(field => {
+										const option = document.createElement('option');
+										option.value = field;
+										option.textContent = field;
+										option.selected = term.field === field;
+										fieldSelect.appendChild(option);
+								});
+								fieldSelect.onchange = (e) => {
+										terms[index].field = e.target.value;
+										updateQuery();
+								};
+
+								termRow.appendChild(input);
+								termRow.appendChild(fieldSelect);
+
+								if (terms.length > 1) {
+										const removeBtn = document.createElement('button');
+										removeBtn.className = 'btn btn-danger';
+										removeBtn.innerHTML = '✕';
+										removeBtn.onclick = () => removeTerm(index);
+										termRow.appendChild(removeBtn);
+								}
+
+								termGroup.appendChild(termRow);
+								container.appendChild(termGroup);
+						});
+				}
+
+				function addTerm() {
+						terms.push({ text: '', field: 'All Fields', operator: 'AND' });
+						renderTerms();
+						updateQuery();
+				}
+
+				function removeTerm(index) {
+						if (terms.length > 1) {
+								terms.splice(index, 1);
+								renderTerms();
+								updateQuery();
+						}
+				}
+
+				function renderArticleTypes() {
+						const container = document.getElementById('articleTypes');
+						articleTypeOptions.forEach(type => {
+								const label = document.createElement('label');
+								label.className = 'checkbox-label';
+
+								const checkbox = document.createElement('input');
+								checkbox.type = 'checkbox';
+								checkbox.value = type;
+								checkbox.onchange = updateQuery;
+
+								const span = document.createElement('span');
+								span.textContent = type;
+
+								label.appendChild(checkbox);
+								label.appendChild(span);
+								container.appendChild(label);
+						});
+				}
+
+				function renderLanguages() {
+						const select = document.getElementById('language');
+						languageOptions.forEach(lang => {
+								const option = document.createElement('option');
+								option.value = lang;
+								option.textContent = lang;
+								select.appendChild(option);
+						});
+				}
+
+				function generateQuery() {
+						let query = '';
+
+						const validTerms = terms.filter(t => t.text.trim());
+						validTerms.forEach((term, index) => {
+								if (index > 0) {
+										query += ` ${term.operator} `;
+								}
+								const fieldTag = fieldMapping[term.field];
+								if (term.text.includes(' ') && !term.text.startsWith('"')) {
+										query += `"${term.text}"${fieldTag}`;
+								} else {
+										query += `${term.text}${fieldTag}`;
+								}
+						});
+
+						const dateFrom = document.getElementById('dateFrom').value;
+						const dateTo = document.getElementById('dateTo').value;
+						if (dateFrom || dateTo) {
+								if (query) query += ' AND ';
+								const from = dateFrom || '1900/01/01';
+								const to = dateTo || '3000/12/31';
+								query += `("${from}"[Date - Publication] : "${to}"[Date - Publication])`;
+						}
+
+						const selectedTypes = Array.from(document.querySelectorAll('#articleTypes input:checked'))
+								.map(cb => cb.value);
+						if (selectedTypes.length > 0) {
+								if (query) query += ' AND ';
+								query += '(' + selectedTypes.map(type => `"${type}"[Publication Type]`).join(' OR ') + ')';
+						}
+
+						const species = document.getElementById('species').value.trim();
+						if (species) {
+								if (query) query += ' AND ';
+								query += `"${species}"[MeSH Terms]`;
+						}
+
+						const language = document.getElementById('language').value;
+						if (language) {
+								if (query) query += ' AND ';
+								query += `${language.toLowerCase()}[Language]`;
+						}
+
+						// Filtros de acceso
+						const freeFullText = document.getElementById('freeFullText').checked;
+						if (freeFullText) {
+								if (query) query += ' AND ';
+								query += 'free full text[filter]';
+						}
+
+						const openAccess = document.getElementById('openAccess').checked;
+						if (openAccess) {
+								if (query) query += ' AND ';
+								query += 'open access[filter]';
+						}
+
+						const abstract = document.getElementById('abstract').checked;
+						if (abstract) {
+								if (query) query += ' AND ';
+								query += 'hasabstract[text]';
+						}
+
+						return query || '(No hay filtros aplicados)';
+				}
+
+				function updateQuery() {
+						const query = generateQuery();
+						document.getElementById('queryOutput').textContent = query;
+				}
+
+				function copyQuery() {
+						const query = generateQuery();
+						navigator.clipboard.writeText(query).then(() => {
+								const btn = document.getElementById('copyText');
+								btn.textContent = '¡Copiado!';
+								setTimeout(() => {
+										btn.textContent = 'Copiar';
+								}, 2000);
+						});
+				}
+
+				document.getElementById('dateFrom').addEventListener('change', updateQuery);
+				document.getElementById('dateTo').addEventListener('change', updateQuery);
+				document.getElementById('species').addEventListener('input', updateQuery);
+				document.getElementById('language').addEventListener('change', updateQuery);
+
+				init();
+		</script>
+</body>
+</html>
