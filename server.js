@@ -6,7 +6,6 @@ const cors = require('cors');
 const path = require('path');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
 
 const API_PUBMED = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils";
 
@@ -106,7 +105,12 @@ app.post('/api/search', async (req, res) => {
         
         const searchUrl = `${API_PUBMED}/esearch.fcgi?db=pubmed&term=${encodeURIComponent(query)}&retstart=${start}&retmax=${max}&retmode=json&sort=relevance`;
         const searchRes = await throttledFetch(searchUrl);
-        const data = await searchRes.json();
+        const contentType = searchRes.headers.get("content-type");
+        if (contentType && contentType.includes("application/json")) {
+            const data = await searchRes.json();
+        } else {
+            const text = await searchRes.text();
+        }
         
         res.json(data);
     } catch (error) {
