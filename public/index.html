@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PubMed AI Researcher Pro</title>
+    <link rel="stylesheet" href="pubmed_ai.css">
+</head>
+<body>
+
+    <div class="ncbi-header">
+        <div class="ncbi-bar">
+            <div class="ncbi-title">PubMed AI Researcher</div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="layout">
+            
+            <aside class="sidebar">
+                <div class="sidebar-section">
+                    <div class="sidebar-header">
+                        <span>My Library</span>
+                        <span class="sidebar-count" id="savedCount">0</span>
+                    </div>
+                    <div class="folder-controls">
+                        <button class="btn-new-folder" onclick="createNewFolder()">
+                            New Folder
+                        </button>
+                    </div>
+                    <div id="foldersContainer" class="folders-container">
+                        <div class="folder-item active" data-folder="default" onclick="selectFolder('default')">
+                            <img src="images/file.png" class="folder-icon" alt="Folder Icon">
+                            <span class="folder-name">Uncategorized</span>
+                            <span class="folder-count">0</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="sidebar-section">
+                    <div class="sidebar-header">History</div>
+                    <ul class="sidebar-list" id="historyList">
+                        <li class="empty-state">No recent searches</li>
+                    </ul>
+                </div>
+                <div class="sidebar-section">
+                    <div class="sidebar-header">Frequent Topics</div>
+                    <div>
+                        <div class="topic-item" onclick="quickSearch('Lupus treatment')">Lupus Treatment</div>
+                        <div class="topic-item" onclick="quickSearch('Insulin resistance')">Insulin Resistance</div>
+                        <div class="topic-item" onclick="quickSearch('Microbiota brain')">Gut-Brain Axis</div>
+                        <div class="topic-item" onclick="quickSearch('Vitamin D immune')">Vitamin D & Immunity</div>
+                    </div>
+                </div>
+            </aside>
+            <main class="main">
+                <div class="search-panel">
+                    <div class="search-tabs">
+                        <button class="tab-btn active" id="tabAI" onclick="switchSearchMode('ai')">
+                            AI Assistant Search (Recommended) 
+                        </button>
+                        <button class="tab-btn" id="tabDirect" onclick="switchSearchMode('direct')">
+                            Manual Search (PubMed Syntax)
+                        </button>
+                    </div>
+                    
+                    <div class="search-row" id="searchAI">
+                        <input type="text" id="userPrompt" class="search-input" placeholder="Describe what you are looking for (e.g. Lupus treatment in children)..." onkeypress="handleEnter(event)">
+                        <button class="btn-search" onclick="startNewSearch()" id="btnSearch">Search</button>
+                    </div>
+                    
+                    <div class="search-row" id="searchDirect" style="display:none;">
+                        <input type="text" id="directQuery" class="search-input" placeholder="PubMed Query (e.g. Gout[MeSH] AND therapy[subheading])..." onkeypress="handleDirectEnter(event)">
+                        <button class="btn-search" onclick="startDirectSearch()" id="btnDirectSearch">Search</button>
+                    </div>
+                    
+                    <div class="search-controls">
+                        <div class="basic-filters">
+                            <label class="filter-label">
+                                <input type="checkbox" id="filterFree"> Free (Full Text)
+                            </label>
+                            <label class="filter-label">
+                                <input type="checkbox" id="filterReview"> Reviews
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="adv-toggle" onclick="toggleAdvancedFilters()">+ Advanced Filters</div>
+
+                    <div class="advanced-filters" id="advancedFilters">
+                        <div class="filter-grid">
+                            <div class="filter-column">
+                                <h4>Dates</h4>
+                                <label class="filter-option"><input type="radio" name="dateFilter" value="1" onchange="toggleCustomDate()"> 1 year</label>
+                                <label class="filter-option"><input type="radio" name="dateFilter" value="5" checked onchange="toggleCustomDate()"> 5 years</label>
+                                <label class="filter-option"><input type="radio" name="dateFilter" value="10" onchange="toggleCustomDate()"> 10 years</label>
+                                <label class="filter-option"><input type="radio" name="dateFilter" value="custom" checked onchange="toggleCustomDate()"> Custom</label>
+                                <div id="customDate" class="date-range">
+                                    <input type="number" id="yearFrom" class="date-input" placeholder="YYYY"> - 
+                                    <input type="number" id="yearTo" class="date-input" placeholder="YYYY">
+                                </div>
+                            </div>
+                            <div class="filter-column">
+                                <h4>Type</h4>
+                                <select id="articleType" class="filter-select">
+                                    <option value="">All</option>
+                                    <option value="Clinical Trial[pt]">Clinical Trial</option>
+                                    <option value="Meta-Analysis[pt]">Meta-Analysis</option>
+                                    <option value="Review[pt]">Review</option>
+                                    <option value="Systematic Review[pt]">Systematic Review</option>
+                                </select>
+                                <h4>Language</h4>
+                                <select id="language" class="filter-select">
+                                    <option value="">All</option>
+                                    <option value="English[la]">English</option>
+                                    <option value="Spanish[la]">Spanish</option>
+                                </select>
+                            </div>
+                            <div class="filter-column">
+                                <h4>Population</h4>
+                                <select id="species" class="filter-select">
+                                    <option value="">Species: All</option>
+                                    <option value="Humans[mesh]">Humans</option>
+                                    <option value="Animals[mesh:noexp]">Animals</option>
+                                </select>
+                                <select id="age" class="filter-select">
+                                    <option value="">Age: All</option>
+                                    <option value="Child[mesh]">Children</option>
+                                    <option value="Adult[mesh]">Adults</option>
+                                    <option value="Aged[mesh]">Elderly</option>
+                                </select>
+                            </div>
+                            <div class="filter-column">
+                                <h4>Others</h4>
+                                <label class="filter-option"><input type="checkbox" id="checkData"> Associated data</label>
+                                <label class="filter-option"><input type="checkbox" id="checkPreprints"> Exclude preprints</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="queryPanel" class="query-panel">
+                    <div class="query-header" onclick="toggleQuery()"><span>Generated Query</span><button class="btn-copy" onclick="copyQuery(event)">Copy</button></div>
+                    <div class="query-content" id="queryText"></div>
+                </div>
+
+                <div id="mainLoader" class="loader"><div class="spinner"></div>Searching...</div>
+
+                <div id="resultsContainer" class="results-container" style="display:none;">
+                    <div class="results-header">Results</div>
+                    <div id="paperList"></div>
+                    <div id="bottomLoader" class="loader"><div class="spinner"></div>Loading more...</div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <footer class="legal-footer">
+        <p><strong>Disclaimer:</strong> This tool uses the public PubMed API (NCBI) but is not officially affiliated with these institutions.</p>
+        <p>Summaries are generated by AI and may contain errors. This is not medical advice.</p>
+    </footer>
+
+    <svg style="display:none;">
+        <symbol id="icon-edit" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></symbol>
+        <symbol id="icon-trash" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></symbol>
+        <symbol id="icon-check" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></symbol>
+        <symbol id="icon-x" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></symbol>
+        <symbol id="icon-folder" viewBox="0 0 24 24">
+            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+        </symbol>
+        <symbol id="icon-edit-folder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/> </symbol>
+        <symbol id="icon-delete-folder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+            <line x1="10" y1="11" x2="10" y2="17"/>
+            <line x1="14" y1="11" x2="14" y2="17"/>
+        </symbol>
+    </svg>
+
+    <script src="pubmed_ai.js"></script>
+</body>
+
+<button class="legal-trigger" onclick="openLegalModal()">Legal Terms</button>
+
+<div id="legalModal" class="modal-overlay" onclick="closeLegalModal(event)">
+    <div class="modal-content" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <h3>Legal Terms & AI Usage</h3>
+            <button class="close-btn" onclick="closeLegalModal()">×</button>
+        </div>
+            <div class="modal-body">
+            <section class="legal-section">
+                <h4>Disclaimer</h4>
+                <p>This tool is for informational and academic purposes only. <strong>It does not constitute professional medical advice</strong>. Healthcare professionals should always verify the original source before making clinical decisions.</p>
+            </section>
+            <section class="legal-section">
+                <h4>AI Technology</h4>
+                <p>Summaries and queries are generated using the <strong>Pollinations.ai</strong> API utilizing advanced language models. The accuracy and quality of generated content depend on the models used and may contain errors or inaccuracies.</p>
+            </section>
+            <section class="legal-section">
+                <h4>Privacy & Data</h4>
+                <p>We do not store any of your data on external servers. Search history and saved articles are stored locally in your browser via localStorage and remain solely on your device.</p>
+            </section>
+            <section class="legal-section">
+                <h4>Sources & Affiliation</h4>
+                <p>This tool utilizes the public <strong>PubMed (NCBI)</strong> API but is <strong>not officially affiliated</strong> with the National Center for Biotechnology Information or the National Institutes of Health.</p>
+            </section>
+            <section class="legal-section">
+                <h4>MIT License</h4>
+                <p style="font-size: 11px; font-family: 'Courier New', monospace; background: #f5f5f5; padding: 12px; border: 1px solid #ddd; line-height: 1.5; color: #333;">
+                    <strong style="font-size: 12px; font-family: Arial, sans-serif;">Copyright (c) 2025 Jaime Sánchez</strong><br><br>
+                    Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:<br><br>
+                    The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.<br><br>
+                    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+                </p>
+            </section>
+        </div>
+    </div>
+</div>
+
+<button class="about-trigger" onclick="openAboutModal()">About the Project</button>
+<div id="aboutModal" class="modal-overlay" onclick="closeAboutModal(event)">
+    <div class="modal-content" onclick="event.stopPropagation()">
+        <div class="modal-header" style="background: var(--ncbi-blue);">
+            <h3>Educational Project</h3>
+            <button class="close-btn" onclick="closeAboutModal()">×</button>
+        </div>
+        <div class="modal-body" style="text-align: center;">
+            <div style="margin-bottom: 20px;">
+                <span style="font-size: 40px;">🎓</span>
+            </div>
+            
+            <h4 style="color:var(--ncbi-blue); margin-bottom:15px; font-size:18px;">Tool for Students and Professionals</h4>
+            
+            <p style="margin-bottom: 15px; font-size: 14px; color: #555;">
+                Hello, this tool has been developed for <strong>purely educational purposes</strong> to facilitate access to scientific research.
+            </p>
+            
+            <p style="margin-bottom: 25px; font-size: 14px; color: #555;">
+                <strong>I do not generate any monetary profit</strong> with this project. My only goal is to help the academic community find quality information more efficiently.
+            </p>
+
+            <div style="background: #f0f8ff; padding: 15px; border-radius: 8px; border: 1px solid #b3d7ff; margin-bottom: 25px;">
+                <p style="margin: 0; font-weight: 600; color: var(--ncbi-dark); font-size: 13px;">
+                    If this tool has been useful to you, the best way to thank me is by connecting with me:
+                </p>
+            </div>
+
+            <div class="social-buttons">
+                <a href="#" target="_blank" class="social-btn linkedin">
+                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
+                    Follow on LinkedIn
+                </a>
+                <a href="#" target="_blank" class="social-btn github">
+                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+                    Follow on GitHub
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+</html>
