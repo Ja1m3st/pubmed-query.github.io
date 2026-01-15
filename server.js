@@ -1,5 +1,3 @@
-//require('dotenv').config(); 
-
 const express = require('express');
 const fetch = require('node-fetch');
 const cors = require('cors');
@@ -8,8 +6,6 @@ const path = require('path');
 const app = express();
 
 const API_PUBMED = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils";
-
-// 2. Ahora cogemos la clave del entorno
 const API_KEY = process.env.API_KEY;
 
 app.use(cors());
@@ -29,8 +25,6 @@ async function throttledFetch(url) {
     lastRequestTime = Date.now();
     return fetch(url);
 }
-
-// API Endpoints
 
 // Generate AI query
 app.post('/api/generate-query', async (req, res) => {
@@ -83,7 +77,9 @@ app.post('/api/generate-query', async (req, res) => {
         const url = `https://gen.pollinations.ai/text/${encodeURIComponent(userInput)}?model=openai&system=${encodeURIComponent(systemPrompt)}&key=${API_KEY}`;
         const response = await throttledFetch(url);
         
-        if (!response.ok) throw new Error("AI service error");
+        if (!response.ok) {
+            throw new Error(`AI service error: ${response.status}`);
+        }
         
         let query = (await response.text()).replace(/^"|"$/g, '').trim();
         
@@ -94,29 +90,34 @@ app.post('/api/generate-query', async (req, res) => {
         
         res.json({ query });
     } catch (error) {
+        console.error('Generate query error:', error);
         res.status(500).json({ error: error.message });
     }
 });
 
+// Search PubMed - CORREGIDO
 app.post('/api/search', async (req, res) => {
     try {
         const { query, start = 0, max = 10 } = req.body;
         
         const searchUrl = `${API_PUBMED}/esearch.fcgi?db=pubmed&term=${encodeURIComponent(query)}&retstart=${start}&retmax=${max}&retmode=json&sort=relevance`;
+        
+ 
         const searchRes = await throttledFetch(searchUrl);
         
+        if (!searchRes.ok) {
+            throw new Error(`PubMed API error: ${searchRes.status}`);
+        }
+        
+        const text = await searchRes.text();
+        
         let data;
-        const contentType = searchRes.headers.get("content-type");
-        if (contentType && contentType.includes("application/json")) {
-            data = await searchRes.json();
-        } else {
-            const text = await searchRes.text();
-            // Intentar parsear el texto como JSON
-            try {
-                data = JSON.parse(text);
-            } catch (e) {
-                throw new Error("Response is not valid JSON");
-            }
+        try {
+            data = JSON.parse(text);
+        } catch (parseError) {
+            console.error('JSON parse error:', parseError);
+            console.error('Response text:', text);
+            throw new Error('Invalid JSON response from PubMed API');
         }
         
         res.json(data);
@@ -131,28 +132,59 @@ app.post('/api/fetch-papers', async (req, res) => {
     try {
         const { ids } = req.body;
         
-        const fetchUrl = `${API_PUBMED}/efetch.fcgi?db=pubmed&id=${ids.join(',')}&retmode=xml`;
-        const fetchRes = await throttledFetch(fetchUrl);
-        const xmlText = await fetchRes.text();
+        if (!ids || ids.length === 0) {
+            return res.status(400).json({ error: 'No IDs provided' });
+        }
         
+        const fetchUrl = `${API_PUBMED}/efetch.fcgi?db=pubmed&id=${ids.join(',')}&retmode=xml`;
+        
+        const fetchRes = await throttledFetch(fetchUrl);
+        
+        if (!fetchRes.ok) {
+            throw new Error(`PubMed API error: ${fetchRes.status}`);
+        }
+        
+        const xmlText = await fetchRes.text();
         res.type('text/xml').send(xmlText);
     } catch (error) {
+        console.error('Fetch papers error:', error);
         res.status(500).json({ error: error.message });
     }
 });
 
-// Check free status
+// Check free status - CORREGIDO
 app.post('/api/check-free', async (req, res) => {
     try {
         const { ids } = req.body;
         
+        if (!ids || ids.length === 0) {
+            return res.json({ esearchresult: { idlist: [] } });
+        }
+        
         const checkQuery = `(${ids.join(' OR ')}) AND "free full text"[filter]`;
         const checkUrl = `${API_PUBMED}/esearch.fcgi?db=pubmed&term=${encodeURIComponent(checkQuery)}&retmode=json`;
+       
         const checkRes = await throttledFetch(checkUrl);
-        const data = await checkRes.json();
+        
+        if (!checkRes.ok) {
+            throw new Error(`PubMed API error: ${checkRes.status}`);
+        }
+        
+        const text = await checkRes.text();
+        
+        let data;
+        try {
+            data = JSON.parse(text);
+        } catch (parseError) {
+            console.error('JSON parse error in check-free:', parseError);
+            console.error('Response text:', text);
+            // Return empty result instead of failing
+            return res.json({ esearchresult: { idlist: [] } });
+        }
         
         res.json(data);
     } catch (error) {
+        console.error('Check free error:', error);
         res.status(500).json({ error: error.message });
     }
 });
@@ -187,25 +219,48 @@ app.post('/api/generate-summary', async (req, res) => {
         const url = `https://gen.pollinations.ai/text/${encodeURIComponent(prompt)}?model=openai&key=${API_KEY}`;
         const response = await throttledFetch(url);
         
-        if (!response.ok) throw new Error("AI Error");
+        if (!response.ok) {
+            throw new Error(`AI Error: ${response.status}`);
+        }
         
         let text = await response.text();
         text = text.replace(/```html/g, '').replace(/```/g, '');
         
         res.json({ summary: text });
     } catch (error) {
+        console.error('Generate summary error:', error);
         res.status(500).json({ error: error.message });
     }
 });
 
-// Get related papers
+// Get related papers - CORREGIDO
 app.post('/api/related-papers', async (req, res) => {
     try {
         const { pmid } = req.body;
         
+        if (!pmid) {
+            return res.status(400).json({ error: 'No PMID provided' });
+        }
+        
         const linkUrl = `${API_PUBMED}/elink.fcgi?dbfrom=pubmed&id=${pmid}&retmode=json&cmd=neighbor_score`;
+
+        
         const linkRes = await throttledFetch(linkUrl);
-        const linkData = await linkRes.json();
+        
+        if (!linkRes.ok) {
+            throw new Error(`PubMed API error: ${linkRes.status}`);
+        }
+        
+        const text = await linkRes.text();
+        
+        let linkData;
+        try {
+            linkData = JSON.parse(text);
+        } catch (parseError) {
+            console.error('JSON parse error in related-papers:', parseError);
+            console.error('Response text:', text);
+            return res.json({ relatedIds: [] });
+        }
         
         const relatedIds = linkData.linksets?.[0]?.linksetdbs?.[0]?.links?.slice(0, 4) || [];
         
@@ -215,10 +270,15 @@ app.post('/api/related-papers', async (req, res) => {
         
         const fetchUrl = `${API_PUBMED}/efetch.fcgi?db=pubmed&id=${relatedIds.join(',')}&retmode=xml`;
         const fetchRes = await throttledFetch(fetchUrl);
-        const xmlText = await fetchRes.text();
         
+        if (!fetchRes.ok) {
+            throw new Error(`PubMed API error: ${fetchRes.status}`);
+        }
+        
+        const xmlText = await fetchRes.text();
         res.type('text/xml').send(xmlText);
     } catch (error) {
+        console.error('Related papers error:', error);
         res.status(500).json({ error: error.message });
     }
 });
@@ -226,6 +286,15 @@ app.post('/api/related-papers', async (req, res) => {
 // Serve index.html
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+    res.json({ 
+        status: 'ok', 
+        timestamp: new Date().toISOString(),
+        nodeVersion: process.version 
+    });
 });
 
 // Solo escuchamos el puerto si estamos en local (no en Vercel)
