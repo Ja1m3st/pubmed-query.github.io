@@ -184,28 +184,67 @@ body {
 .legal-footer strong { color: white; }
 .legal-footer a { color: #90cdf4; text-decoration: none; }
 
-/* LEGAL MODAL */
+/* --- FIXED BUTTONS (Legal & About) --- */
+
 .legal-trigger {
     position: fixed;
-    bottom: 85px;
-    right: 20px;
+    bottom: 90px;        /* Altura justa encima del footer */
+    right: 20px;         /* Pegado al borde derecho */
     background: var(--ncbi-blue);
-    border: none;
     color: white;
+    border: none;
     padding: 10px 16px;
     cursor: pointer;
     font-size: 13px;
     border-radius: 4px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    z-index: 1000;
+    font-weight: 600;
+    transition: all 0.2s;
+    /* Aseguramos ancho mínimo para que no se deforme */
+    min-width: 110px; 
+    display: flex;
+    justify-content: center;
+}
+
+/* 2. Botón About (A la izquierda del Legal) */
+.about-trigger {
+    position: fixed;
+    bottom: 90px;        /* IMPORTANTE: La misma altura que el legal */
+    right: 150px;        /* 150px = 20px (margen) + 110px (ancho botón legal) + 20px (hueco) */
+    background: var(--ncbi-blue);
+    color: white;
+    border: none;
+    padding: 10px 16px;
+    cursor: pointer;
+    font-size: 13px;
+    border-radius: 4px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
     z-index: 1000;
     font-weight: 600;
     transition: all 0.2s;
 }
 
-.legal-trigger:hover {
-    background: var(--ncbi-dark);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-    transform: translateY(-2px);
+/* Efectos Hover */
+.legal-trigger:hover, .about-trigger:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 15px rgba(0,0,0,0.3);
+}
+
+/* --- VERSIÓN MÓVIL --- */
+@media (max-width: 600px) {
+    /* En móvil los subimos más para que no tapen el footer que es más alto */
+    .legal-trigger {
+        right: 20px;
+        bottom: 120px;
+        width: auto;
+    }
+    
+    .about-trigger {
+        right: 20px;
+        bottom: 170px; /* Lo ponemos ENCIMA del legal, no al lado */
+        width: auto;
+    }
 }
 
 .modal-overlay {
@@ -715,44 +754,6 @@ body {
     gap: 0; 
 }
 
-/* FREE ARTICLE LABEL */
-.free-label {
-    color: #f47023;
-    font-weight: 600;
-    font-size: 11px;
-    margin-left: 8px;
-    display: inline-block;
-    cursor: help;
-}
-
-.free-label:hover {
-    text-decoration: underline;
-}
-
-/* ABOUT PROJECT BUTTON */
-.about-trigger {
-    position: fixed;
-    bottom: 85px;
-    right: 220px; 
-    background: var(--ncbi-blue);
-    border: none;
-    color: white;
-    padding: 10px 16px;
-    cursor: pointer;
-    font-size: 13px;
-    border-radius: 4px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-    z-index: 1000;
-    font-weight: 600;
-    transition: all 0.2s;
-}
-
-.about-trigger:hover {
-    background: #333;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-}
-
 /* SOCIAL BUTTON STYLES */
 .social-buttons {
     display: flex;
@@ -798,12 +799,4 @@ body {
 
 .social-btn.github:hover {
     background: #000;
-}
-
-/* Mobile Adjustments */
-@media (max-width: 600px) {
-    .about-trigger {
-        right: 20px; 
-        bottom: 130px; 
-    }
 }
