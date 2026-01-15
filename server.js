@@ -98,8 +98,6 @@ app.post('/api/generate-query', async (req, res) => {
     }
 });
 
-// Search PubMed
-// Search PubMed
 app.post('/api/search', async (req, res) => {
     try {
         const { query, start = 0, max = 10 } = req.body;
@@ -107,18 +105,27 @@ app.post('/api/search', async (req, res) => {
         const searchUrl = `${API_PUBMED}/esearch.fcgi?db=pubmed&term=${encodeURIComponent(query)}&retstart=${start}&retmax=${max}&retmode=json&sort=relevance`;
         const searchRes = await throttledFetch(searchUrl);
         
+        let data;
         const contentType = searchRes.headers.get("content-type");
         if (contentType && contentType.includes("application/json")) {
-            const data = await searchRes.json();
+            data = await searchRes.json();
         } else {
             const text = await searchRes.text();
+            // Intentar parsear el texto como JSON
+            try {
+                data = JSON.parse(text);
+            } catch (e) {
+                throw new Error("Response is not valid JSON");
+            }
         }
         
         res.json(data);
     } catch (error) {
+        console.error('Search error:', error);
         res.status(500).json({ error: error.message });
     }
 });
+
 // Fetch paper details
 app.post('/api/fetch-papers', async (req, res) => {
     try {
