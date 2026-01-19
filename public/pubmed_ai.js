@@ -739,5 +739,14 @@ function closeAboutModal(e) {
     document.getElementById('aboutModal').style.display = 'none';
 }
 
+function dismissFooter() {
+    const footer = document.getElementById('stickyFooter');
+    if (footer) {
+        footer.style.display = 'none';
+
+        document.body.style.paddingBottom = '0';
+    }
+}
+
 renderFolders();
 renderSavedPapers();

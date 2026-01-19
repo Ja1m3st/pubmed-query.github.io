@@ -201,7 +201,6 @@ body {
     z-index: 1000;
     font-weight: 600;
     transition: all 0.2s;
-    /* Aseguramos ancho mínimo para que no se deforme */
     min-width: 110px; 
     display: flex;
     justify-content: center;
@@ -210,8 +209,8 @@ body {
 /* 2. Botón About (A la izquierda del Legal) */
 .about-trigger {
     position: fixed;
-    bottom: 90px;        /* IMPORTANTE: La misma altura que el legal */
-    right: 150px;        /* 150px = 20px (margen) + 110px (ancho botón legal) + 20px (hueco) */
+    bottom: 90px;
+    right: 150px;
     background: var(--ncbi-blue);
     color: white;
     border: none;
@@ -233,7 +232,6 @@ body {
 
 /* --- VERSIÓN MÓVIL --- */
 @media (max-width: 600px) {
-    /* En móvil los subimos más para que no tapen el footer que es más alto */
     .legal-trigger {
         right: 20px;
         bottom: 120px;
@@ -242,7 +240,7 @@ body {
     
     .about-trigger {
         right: 20px;
-        bottom: 170px; /* Lo ponemos ENCIMA del legal, no al lado */
+        bottom: 170px;
         width: auto;
     }
 }
@@ -786,7 +784,7 @@ body {
 }
 
 .social-btn.linkedin {
-    background: #0077b5; /* LinkedIn Blue */
+    background: #0077b5;
 }
 
 .social-btn.linkedin:hover {
@@ -794,9 +792,33 @@ body {
 }
 
 .social-btn.github {
-    background: #333; /* GitHub Black */
+    background: #333;
 }
 
 .social-btn.github:hover {
     background: #000;
+}
+
+.close-footer-btn {
+    position: absolute;
+    top: 5px;
+    right: 10px;
+    background: transparent;
+    border: none;
+    color: #999;
+    font-size: 24px;
+    font-weight: bold;
+    cursor: pointer;
+    line-height: 1;
+    z-index: 901;
+    padding: 0 5px;
+    transition: color 0.2s;
+}
+
+.close-footer-btn:hover {
+    color: white;
+}
+
+.legal-footer {
+    padding-right: 35px; 
 }
