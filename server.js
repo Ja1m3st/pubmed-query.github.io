@@ -3,14 +3,18 @@ const express = require('express');
 const fetch = require('node-fetch');
 const cors = require('cors');
 const path = require('path');
+const cookieParser = require('cookie-parser');
+const jwt = require('jsonwebtoken');
 
 const app = express();
 
 const API_PUBMED = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils";
 const API_KEY = process.env.API_KEY;
+const JWT_SECRET = process.env.JWT_SECRET;
 
+app.use(cookieParser());
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '1mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Rate limiting
@@ -26,6 +30,40 @@ async function throttledFetch(url) {
     lastRequestTime = Date.now();
     return fetch(url);
 }
+
+app.post('/api/save-state', (req, res) => {
+    try {
+        const { folders } = req.body;
+        // Creamos el JWT con los datos de las carpetas
+        const token = jwt.sign({ folders }, JWT_SECRET);
+        
+        // Guardamos en cookie httpOnly (seguro)
+        res.cookie('user_library', token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production', // Solo https en prod
+            maxAge: 30 * 24 * 60 * 60 * 1000, // 30 días
+            sameSite: 'strict'
+        });
+        
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ error: 'Error saving state' });
+    }
+});
+
+// Cargar estado desde Cookie
+app.get('/api/load-state', (req, res) => {
+    try {
+        const token = req.cookies.user_library;
+        if (!token) return res.json({ folders: null });
+
+        const decoded = jwt.verify(token, JWT_SECRET);
+        res.json({ folders: decoded.folders });
+    } catch (error) {
+        // Si el token es inválido o expiró
+        res.json({ folders: null });
+    }
+});
 
 // Generate AI query
 app.post('/api/generate-query', async (req, res) => {

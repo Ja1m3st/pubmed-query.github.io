@@ -1210,3 +1210,74 @@ body {
         bottom: 180px;
     }
 }
+
+.cookie-banner {
+    position: fixed;
+    bottom: 24px;
+    left: 24px;  /* Situado a la izquierda */
+    width: 320px; /* Ancho fijo para que parezca una tarjeta/cuadrado */
+    background: #1f2937; /* Fondo oscuro */
+    color: white;
+    padding: 24px;
+    border-radius: 16px; /* Bordes más redondeados */
+    box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+    z-index: 10001; /* Por encima del footer (900) y botones flotantes (1000) */
+    display: flex; /* Flex para organizar contenido */
+    flex-direction: column;
+    gap: 16px;
+    border: 1px solid #374151;
+    animation: slideInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.cookie-content p {
+    font-size: 13px;
+    margin: 0;
+    line-height: 1.6;
+    color: #e5e7eb;
+    text-align: left;
+}
+
+.cookie-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-start; /* Botones alineados a la izquierda */
+}
+
+.btn-accept {
+    background: #2563eb;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 12px;
+    cursor: pointer;
+    font-weight: 600;
+    flex: 1;
+    transition: background 0.2s;
+}
+
+.btn-accept:hover {
+    background: #1d4ed8;
+}
+
+.btn-decline {
+    background: transparent;
+    border: 1px solid #4b5563;
+    color: #9ca3af;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 12px;
+    cursor: pointer;
+    flex: 1;
+    transition: all 0.2s;
+}
+
+.btn-decline:hover {
+    border-color: #d1d5db;
+    color: #d1d5db;
+}
+
+@keyframes slideInUp {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}

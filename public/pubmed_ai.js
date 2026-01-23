@@ -7,23 +7,35 @@ let isLoading = false;
 let hasMoreResults = true;
 let searchHistory = [];
 
+let cookieConsent = localStorage.getItem('cookieConsent') === 'true';
+
 // Initialize folders from localStorage or use default
 let folders = JSON.parse(localStorage.getItem('folders')) || [
     { id: 'default', name: 'Uncategorized', papers: [] }
 ];
 let currentFolder = 'default';
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+    await loadStateFromServer();
+    
     renderFolders();
     renderSavedPapers();
+    
+    adjustFooterPadding();
+
+    if (localStorage.getItem('cookieConsent') === null) {
+        document.getElementById('cookieBanner').style.display = 'block';
+    }
 });
+
+// Escuchar cambios de tamaño de ventana para ajustar el footer
+window.addEventListener('resize', adjustFooterPadding);
 
 function handleEnter(e) { if (e.key === 'Enter') startNewSearch(); }
 
 function toggleAdvancedFilters() {
     const p = document.getElementById('advancedFilters');
     const t = event.target;
-    const svg = t.querySelector('svg');
     
     if (p.style.display === 'block') { 
         p.style.display = 'none'; 
@@ -202,7 +214,7 @@ async function startNewSearch() {
     currentStart = 0;
     hasMoreResults = true;
     isLoading = false;
-    currentQuery = ""; // <--- NUEVO: Borramos la búsqueda anterior inmediatamente
+    currentQuery = ""; 
     
     document.getElementById('paperList').innerHTML = "";
     document.getElementById('resultsContainer').style.display = 'none';
@@ -223,7 +235,6 @@ async function startNewSearch() {
         const baseQuery = data.query;
         const filters = buildFilters();
         
-        // Solo ahora actualizamos con la NUEVA búsqueda
         currentQuery = baseQuery + filters; 
         
         document.getElementById('queryText').innerText = currentQuery;
@@ -242,7 +253,6 @@ async function startNewSearch() {
 }
 
 async function fetchPapersBatch() {
-    // NUEVO: Añadido !currentQuery para evitar cargas fantasma
     if (isLoading || !hasMoreResults || !currentQuery) return;
     
     isLoading = true;
@@ -434,60 +444,84 @@ function closeAboutModal(e) {
     document.getElementById('aboutModal').style.display = 'none';
 }
 
-// FOLDER SYSTEM
-function saveFolders() {
-    // Save to localStorage
-    localStorage.setItem('folders', JSON.stringify(folders));
-    renderFolders();
-    renderSavedPapers();
-}
-function renderFolders() {
-    const container = document.getElementById('foldersContainer');
-    container.innerHTML = '';
+function dismissFooter() {
+    const footer = document.getElementById('stickyFooter');
+    const legalBtn = document.querySelector('.legal-trigger');
+    const aboutBtn = document.querySelector('.about-trigger');
     
-    folders.forEach(folder => {
-        const folderDiv = document.createElement('div');
-        folderDiv.className = `folder-item ${currentFolder === folder.id ? 'active' : ''}`;
-        folderDiv.setAttribute('data-folder', folder.id);
+    if (footer) {
+        footer.style.display = 'none';
+        document.body.style.paddingBottom = '0';
         
-        folderDiv.innerHTML = `
-            <svg class="folder-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
-            </svg>
-            <span class="folder-name">${folder.name}</span>
-            <span class="folder-count">${folder.papers.length}</span>
-            ${folder.id !== 'default' ? `
-                <div class="folder-actions">
-                    <button class="folder-btn folder-btn-edit" onclick="renameFolder('${folder.id}')" title="Rename">
-                        <svg width="14" height="14"><use href="#icon-edit-folder"/></svg>
-                    </button>
-                    <button class="folder-btn folder-btn-delete" onclick="deleteFolder('${folder.id}')" title="Delete">
-                        <svg width="14" height="14"><use href="#icon-delete-folder"/></svg>
-                    </button>
-                </div>
-            ` : ''}
-        `;
-        
-        folderDiv.onclick = (e) => {
-            if (e.target.closest('.folder-btn') || e.target.closest('svg')) {
-                return;
-            }
-            selectFolder(folder.id);
-        };
-        
-        container.appendChild(folderDiv);
-    });
+        if (legalBtn) legalBtn.style.bottom = '30px';
+        if (aboutBtn) aboutBtn.style.bottom = '30px';
+    }
 }
 
-function selectFolder(folderId) {
-    if (currentFolder === folderId) {
-        currentFolder = null; 
-    } else {
-        currentFolder = folderId;
+async function loadStateFromServer() {
+    try {
+        const response = await fetch(`${API_BASE}/load-state`);
+        const data = await response.json();
+
+        if (data.folders) {
+            folders = data.folders;
+            localStorage.setItem('folders', JSON.stringify(folders));
+            cookieConsent = true; 
+            localStorage.setItem('cookieConsent', 'true');
+        }
+    } catch (error) {
+        console.error("Error cargando estado del servidor", error);
     }
+}
+
+async function syncStateToServer() {
+    if (!cookieConsent) return;
     
+    try {
+        await fetch(`${API_BASE}/save-state`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ folders })
+        });
+    } catch (error) {
+        console.error("Error guardando en cookie JWT", error);
+    }
+}
+
+function acceptCookies() {
+    cookieConsent = true;
+    localStorage.setItem('cookieConsent', 'true');
+    document.getElementById('cookieBanner').style.display = 'none';
+    syncStateToServer();
+}
+
+function declineCookies() {
+    cookieConsent = false;
+    localStorage.setItem('cookieConsent', 'false');
+    document.getElementById('cookieBanner').style.display = 'none';
+}
+
+function saveFolders() {
+    localStorage.setItem('folders', JSON.stringify(folders));
+    
+    if (cookieConsent) {
+        syncStateToServer();
+    }
     renderFolders();
     renderSavedPapers();
+}
+
+// Renderizados iniciales
+renderFolders();
+renderSavedPapers();
+
+// --- Función que faltaba y causaba el error ---
+function adjustFooterPadding() {
+    const footer = document.getElementById('stickyFooter');
+    if (footer && footer.style.display !== 'none') {
+        const height = footer.offsetHeight;
+        document.body.style.paddingBottom = (height + 20) + 'px';
+    }
 }
 
 function createNewFolder() {
@@ -539,6 +573,55 @@ function deleteFolder(folderId) {
     saveFolders();
 }
 
+function selectFolder(folderId) {
+    if (currentFolder === folderId) {
+        currentFolder = null; 
+    } else {
+        currentFolder = folderId;
+    }
+    
+    renderFolders();
+    renderSavedPapers();
+}
+
+function renderFolders() {
+    const container = document.getElementById('foldersContainer');
+    container.innerHTML = '';
+    
+    folders.forEach(folder => {
+        const folderDiv = document.createElement('div');
+        folderDiv.className = `folder-item ${currentFolder === folder.id ? 'active' : ''}`;
+        folderDiv.setAttribute('data-folder', folder.id);
+        
+        folderDiv.innerHTML = `
+            <svg class="folder-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+            </svg>
+            <span class="folder-name">${folder.name}</span>
+            <span class="folder-count">${folder.papers.length}</span>
+            ${folder.id !== 'default' ? `
+                <div class="folder-actions">
+                    <button class="folder-btn folder-btn-edit" onclick="renameFolder('${folder.id}')" title="Rename">
+                        <svg width="14" height="14"><use href="#icon-edit-folder"/></svg>
+                    </button>
+                    <button class="folder-btn folder-btn-delete" onclick="deleteFolder('${folder.id}')" title="Delete">
+                        <svg width="14" height="14"><use href="#icon-delete-folder"/></svg>
+                    </button>
+                </div>
+            ` : ''}
+        `;
+        
+        folderDiv.onclick = (e) => {
+            if (e.target.closest('.folder-btn') || e.target.closest('svg')) {
+                return;
+            }
+            selectFolder(folder.id);
+        };
+        
+        container.appendChild(folderDiv);
+    });
+}
+
 function movePaperToFolder(pmid, targetFolderId) {
     event.stopPropagation();
     
@@ -562,6 +645,7 @@ function movePaperToFolder(pmid, targetFolderId) {
         }
     }
 }
+
 function renderSavedPapers() {
     const container = document.getElementById('foldersContainer');
     
@@ -629,6 +713,17 @@ function renderSavedPapers() {
     updateSavedCount();
 }
 
+function updateSavedCount() {
+    // Suma todos los papers de todas las carpetas
+    const totalPapers = folders.reduce((sum, folder) => sum + folder.papers.length, 0);
+    
+    // Actualiza el número en el sidebar
+    const countElement = document.getElementById('savedCount');
+    if (countElement) {
+        countElement.textContent = totalPapers;
+    }
+}
+
 function toggleFolderDropdown(event, pmid) {
     event.stopPropagation();
     event.preventDefault();
@@ -665,33 +760,45 @@ function toggleFolderDropdown(event, pmid) {
     }
 }
 
-function updateSavedCount() {
-    const totalPapers = folders.reduce((sum, folder) => sum + folder.papers.length, 0);
-    document.getElementById('savedCount').textContent = totalPapers;
+function handleDirectEnter(e) {
+    if (e.key === 'Enter') startDirectSearch();
 }
 
-document.addEventListener('click', () => {
-    document.querySelectorAll('.folder-dropdown').forEach(d => {
-        d.classList.remove('show');
-    });
-});
+async function startDirectSearch() {
+    const input = document.getElementById('directQuery').value;
+    if (!input.trim()) return;
 
-function savePaper(pmid, title) {
-    const folder = folders.find(f => f.id === currentFolder);
-    if (!folder) return;
+    addToHistory(input);
+    currentStart = 0;
+    hasMoreResults = true;
+    isLoading = false;
+    currentQuery = ""; 
     
-    const exists = folders.some(f => f.papers.some(p => p.pmid === pmid));
-    if (exists) {
-        alert('This article is already saved in a folder');
-        return;
+    document.getElementById('paperList').innerHTML = "";
+    document.getElementById('resultsContainer').style.display = 'none';
+    document.getElementById('queryPanel').style.display = 'none';
+    
+    const btn = document.getElementById('btnDirectSearch');
+    btn.disabled = true;
+    btn.textContent = "...";
+    document.getElementById('mainLoader').style.display = 'block';
+
+    try {
+        const filters = buildFilters();
+        currentQuery = input + filters; 
+        document.getElementById('queryText').innerText = currentQuery;
+        document.getElementById('queryPanel').style.display = 'block';
+        
+        await fetchPapersBatch();
+        document.getElementById('resultsContainer').style.display = 'block';
+    } catch (error) {
+        alert("Error: " + error.message);
+    } finally {
+        btn.disabled = false;
+        btn.textContent = "Search";
+        document.getElementById('mainLoader').style.display = 'none';
     }
-    
-    folder.papers.push({ pmid, title, date: new Date().toISOString() });
-    saveFolders();
-    alert('✅ Article saved in: ' + folder.name);
 }
-
-let currentSearchMode = 'ai';
 
 function switchSearchMode(mode) {
     currentSearchMode = mode;
@@ -715,76 +822,3 @@ function switchSearchMode(mode) {
         document.getElementById('directQuery').focus();
     }
 }
-
-function handleDirectEnter(e) {
-    if (e.key === 'Enter') startDirectSearch();
-}
-
-async function startDirectSearch() {
-    const input = document.getElementById('directQuery').value;
-    if (!input.trim()) return;
-
-    addToHistory(input);
-    currentStart = 0;
-    hasMoreResults = true;
-    isLoading = false;
-    currentQuery = ""; // <--- NUEVO: Borramos la búsqueda anterior
-    
-    document.getElementById('paperList').innerHTML = "";
-    document.getElementById('resultsContainer').style.display = 'none';
-    document.getElementById('queryPanel').style.display = 'none';
-    
-    const btn = document.getElementById('btnDirectSearch');
-    btn.disabled = true;
-    btn.textContent = "...";
-    document.getElementById('mainLoader').style.display = 'block';
-
-    try {
-        const filters = buildFilters();
-        currentQuery = input + filters; // Asignamos la nueva
-        document.getElementById('queryText').innerText = currentQuery;
-        document.getElementById('queryPanel').style.display = 'block';
-        
-        await fetchPapersBatch();
-        document.getElementById('resultsContainer').style.display = 'block';
-    } catch (error) {
-        alert("Error: " + error.message);
-    } finally {
-        btn.disabled = false;
-        btn.textContent = "Search";
-        document.getElementById('mainLoader').style.display = 'none';
-    }
-}
-
-function openAboutModal() {
-    document.getElementById('aboutModal').style.display = 'flex';
-}
-
-function closeAboutModal(e) {
-    if (e && e.target !== document.getElementById('aboutModal') && e.target.className !== 'close-btn') {
-        return;
-    }
-    document.getElementById('aboutModal').style.display = 'none';
-}
-
-function dismissFooter() {
-    const footer = document.getElementById('stickyFooter');
-    const legalBtn = document.querySelector('.legal-trigger');
-    const aboutBtn = document.querySelector('.about-trigger');
-    
-    if (footer) {
-        footer.style.display = 'none';
-        document.body.style.paddingBottom = '0';
-        
-        // Bajar los botones cuando se cierra el footer
-        if (legalBtn) {
-            legalBtn.style.bottom = '30px';
-        }
-        if (aboutBtn) {
-            aboutBtn.style.bottom = '30px';
-        }
-    }
-}
-
-renderFolders();
-renderSavedPapers();
