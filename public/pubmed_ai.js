@@ -23,8 +23,28 @@ function handleEnter(e) { if (e.key === 'Enter') startNewSearch(); }
 function toggleAdvancedFilters() {
     const p = document.getElementById('advancedFilters');
     const t = event.target;
-    if (p.style.display === 'block') { p.style.display = 'none'; t.textContent = '+ Advanced Filters'; }
-    else { p.style.display = 'block'; t.textContent = '- Hide Filters'; }
+    const svg = t.querySelector('svg');
+    
+    if (p.style.display === 'block') { 
+        p.style.display = 'none'; 
+        t.innerHTML = `
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            Advanced Filters
+        `; 
+    }
+    else { 
+        p.style.display = 'block'; 
+        t.innerHTML = `
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transform: rotate(45deg);">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            Hide Filters
+        `; 
+    }
 }
 
 function toggleCustomDate() {
@@ -416,7 +436,6 @@ function saveFolders() {
     renderFolders();
     renderSavedPapers();
 }
-
 function renderFolders() {
     const container = document.getElementById('foldersContainer');
     container.innerHTML = '';
@@ -427,7 +446,9 @@ function renderFolders() {
         folderDiv.setAttribute('data-folder', folder.id);
         
         folderDiv.innerHTML = `
-            <img src="images/file.png" class="folder-icon" alt="Folder Icon">
+            <svg class="folder-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+            </svg>
             <span class="folder-name">${folder.name}</span>
             <span class="folder-count">${folder.papers.length}</span>
             ${folder.id !== 'default' ? `
@@ -536,7 +557,6 @@ function movePaperToFolder(pmid, targetFolderId) {
         }
     }
 }
-
 function renderSavedPapers() {
     const container = document.getElementById('foldersContainer');
     
@@ -577,7 +597,9 @@ function renderSavedPapers() {
                                 <div class="folder-dropdown" id="dropdown-${paper.pmid}">
                                     ${folders.filter(f => f.id !== folder.id).map(f => `
                                         <div class="folder-option" onclick="movePaperToFolder('${paper.pmid}', '${f.id}')">
-                                            <img src="images/file.png" class="folder-icon" alt="Folder Icon">
+                                            <svg class="folder-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                                            </svg>
                                             <span>${f.name}</span>
                                         </div>
                                     `).join('') || '<div class="folder-option-empty">No other folders</div>'}
@@ -741,10 +763,20 @@ function closeAboutModal(e) {
 
 function dismissFooter() {
     const footer = document.getElementById('stickyFooter');
+    const legalBtn = document.querySelector('.legal-trigger');
+    const aboutBtn = document.querySelector('.about-trigger');
+    
     if (footer) {
         footer.style.display = 'none';
-
         document.body.style.paddingBottom = '0';
+        
+        // Bajar los botones cuando se cierra el footer
+        if (legalBtn) {
+            legalBtn.style.bottom = '30px';
+        }
+        if (aboutBtn) {
+            aboutBtn.style.bottom = '30px';
+        }
     }
 }
 
