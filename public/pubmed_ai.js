@@ -202,6 +202,7 @@ async function startNewSearch() {
     currentStart = 0;
     hasMoreResults = true;
     isLoading = false;
+    currentQuery = ""; // <--- NUEVO: Borramos la búsqueda anterior inmediatamente
     
     document.getElementById('paperList').innerHTML = "";
     document.getElementById('resultsContainer').style.display = 'none';
@@ -221,7 +222,9 @@ async function startNewSearch() {
         const data = await response.json();
         const baseQuery = data.query;
         const filters = buildFilters();
-        currentQuery = baseQuery + filters;
+        
+        // Solo ahora actualizamos con la NUEVA búsqueda
+        currentQuery = baseQuery + filters; 
         
         document.getElementById('queryText').innerText = currentQuery;
         document.getElementById('queryPanel').style.display = 'block';
@@ -239,7 +242,9 @@ async function startNewSearch() {
 }
 
 async function fetchPapersBatch() {
-    if (isLoading || !hasMoreResults) return;
+    // NUEVO: Añadido !currentQuery para evitar cargas fantasma
+    if (isLoading || !hasMoreResults || !currentQuery) return;
+    
     isLoading = true;
     if (currentStart > 0) document.getElementById('bottomLoader').style.display = 'block';
 
@@ -723,6 +728,7 @@ async function startDirectSearch() {
     currentStart = 0;
     hasMoreResults = true;
     isLoading = false;
+    currentQuery = ""; // <--- NUEVO: Borramos la búsqueda anterior
     
     document.getElementById('paperList').innerHTML = "";
     document.getElementById('resultsContainer').style.display = 'none';
@@ -735,7 +741,7 @@ async function startDirectSearch() {
 
     try {
         const filters = buildFilters();
-        currentQuery = input + filters;
+        currentQuery = input + filters; // Asignamos la nueva
         document.getElementById('queryText').innerText = currentQuery;
         document.getElementById('queryPanel').style.display = 'block';
         
